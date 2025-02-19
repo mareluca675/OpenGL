@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-// Vertex shader in the GLSL language
+// Vertex shader in the GLSL language (position)
 const char* vertexSourceCode = "#version 330 core\n" // Version of OpenGL, profile
 							   "layout (location = 0) in vec3 aPos;\n" // Input and location
 							   "void main()\n"
@@ -10,12 +10,12 @@ const char* vertexSourceCode = "#version 330 core\n" // Version of OpenGL, profi
 							   " gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n" // Output
 							   "}\0";
 
-// Fragment shader in the GLSL language
+// Fragment shader in the GLSL language (color)
 const char* fragmentShaderSourceCode = "#version 330 core\n" // Version of OpenGL, profile
 								   "out vec4 FragColor;\n" // Output
 								   "void main()\n"
 								   "{\n"
-								   " FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+								   " FragColor = vec4(0f, 1.0f, 0f, 1.0f);\n"
 								   "}\0";
 
 
@@ -38,7 +38,7 @@ void glProgramLinkDebbug(unsigned int program) {
 
 	if (!succes) {
 		glGetProgramInfoLog(program, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::COMPILATION_FAILED\n" <<
+		std::cout << "ERROR::PROGRAM::COMPILATION_FAILED\n" <<
 			infoLog << std::endl;
 	}
 }
@@ -55,12 +55,13 @@ void processInput(GLFWwindow* window) {
 }
 
 int main() {
-	// Initializing GLFW
+	// ------------------------------------------------- GLFW & WINDOW
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+	// Creating window
 	GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
 
 	// Checking window
@@ -81,17 +82,9 @@ int main() {
 		std::cout << "Failed to initialiaze GLAD";
 		return -1;
 	}
+	// ------------------------------------------------- 
 
-	float vertices[] = { // 3D Coords
-		-0.5f, -0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		0.0f, 0.5f, 0.0f
-	};
-
-	unsigned int VBO; // Vertex Buffer Object
-	glGenBuffers(1, &VBO); // Generating the buffer
-	glBindBuffer(VBO, GL_ARRAY_BUFFER); // Binding the buffer to the GL_ARRAY_BUFFER target
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // Copying the data (vertices) into to buffer's memory
+	// ------------------------------------------------- SHADERS
 
 	// Creating a shader object of type GL_VERTEX_SHADER
 	unsigned int vertexShader;
@@ -101,7 +94,7 @@ int main() {
 	glShaderSource(vertexShader, 1, &vertexSourceCode, NULL);
 	glCompileShader(vertexShader);
 
-	// Checking glCompileShader for vertexShader
+	// Checking glCompileShaderDebbug for vertexShader
 	glCompileShaderDebbug(vertexShader);
 
 	// Creating a shader object of type GL_FRAGMENT_SHADER
@@ -112,8 +105,12 @@ int main() {
 	glShaderSource(fragmentShader, 1, &fragmentShaderSourceCode, NULL);
 	glCompileShader(fragmentShader);
 
-	// Checking glCompileShader for fragmentShader
+	// Checking glCompileShaderDebbug for fragmentShader
 	glCompileShaderDebbug(fragmentShader);
+
+	// -------------------------------------------------
+
+	// ------------------------------------------------- PROGRAM
 
 	// Creating a shader program to link all the shaders together
 	unsigned int shaderProgram;
@@ -125,17 +122,22 @@ int main() {
 	glAttachShader(shaderProgram, fragmentShader);
 	glLinkProgram(shaderProgram);
 
-	// Activating the program
-	glUseProgram(shaderProgram);
-
 	// Deleting the shaders, since we no longer need them
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	// Telling OpenGL how it should interpret the vertex data
-	// The first paramter specifies which vertex attribute we want to configure
-	// We specified the position using layout(location = 0)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	// ------------------------------------------------- 
+	
+	// ------------------------------------------------- VAO & VBO
+	float vertices[] = { // 3D Coords (vertices data)
+		-0.5f, -0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f,
+		0.0f, 0.5f, 0.0f
+	};
+
+	// Creating a Vertex Buffer Object (VBO) to manage the memory
+	unsigned int VBO; 
+	glGenBuffers(1, &VBO);
 
 	// Creating a Vertex Array Object (VAO) to store all the state configurations for each vertex
 	unsigned int VAO;
@@ -144,28 +146,50 @@ int main() {
 	// Binding the Vertex Array Object
 	glBindVertexArray(VAO);
 
-	// Copying our vertices array in a buffer for OpenGL to use
+	// Binding the buffer to the GL_ARRAY_BUFFER target and copying the data (vertices) into to buffer's memory
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); 
 
-	// Setting our vertices attributes pointers
+	// Telling OpenGL how it should interpret the vertex data / Setting our vertices attributes pointers
+	// The first paramter specifies which vertex attribute we want to configure
+	// We specified the position using layout(location = 0)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	// Unbinding VAO & VBO
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	// -------------------------------------------------
 	
 	// Render loop
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window); // Processing the input
 
-		glClearColor(0, 0, 0, 0);
+		// Setting the color
+		glClearColor(0.2f, 0.4f, 0.2f, 0.1f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		// Activating the program
 		glUseProgram(shaderProgram);
+
+		// Binding the Vertex Array Object (No need to, since we have 1 VAO object)
 		glBindVertexArray(VAO);
+
+		// Drawing the shape
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		glfwSwapBuffers(window); // Double buffer
-		glfwPollEvents(); // Checks if any events are triggered
+		// Double buffer
+		glfwSwapBuffers(window); 
+
+		// Checks if any events are triggered
+		glfwPollEvents(); 
 	}
+
+	// De-allocating all the memory
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteProgram(shaderProgram);
 
 	glfwTerminate(); // Clean all of GLFW's resources
 	return 0;

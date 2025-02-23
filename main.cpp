@@ -6,27 +6,24 @@
 const char* vertexSourceCode = 
                             "#version 330 core\n" // Version of OpenGL, profile
                             "layout (location = 0) in vec3 aPos;\n" // Input and location
+	                        "layout (location = 1) in vec3 aColor;\n" // Input and locati
+	                        "out vec3 ourColor;\n" // Output
                             "void main()\n"
                             "{\n"
-                            " gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n" // Output
+	                        " gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n" 
+	                        " ourColor = aColor;\n"
                             "}\0";
 
 // Fragment shader in the GLSL language (color)
-const char* fragmentShaderSourceCodeYellow = 
+const char* fragmentShaderSourceCode = 
                                     "#version 330 core\n" // Version of OpenGL, profile
                                     "out vec4 FragColor;\n" // Output
+	                                "in vec3 ourColor;\n" // Input
                                     "void main()\n"
                                     "{\n"
-                                    " FragColor = vec4(1.0f, 1.0f, 0.8f, 1.0f);\n"
+                                    " FragColor = vec4(ourColor, 1.0);\n"
                                     "}\0";
 
-const char* fragmentShaderSourceCodeRed =
-                                    "#version 330 core\n" // Version of OpenGL, profile
-                                    "out vec4 FragColor;\n" // Output
-                                    "void main()\n"
-                                    "{\n"
-                                    " FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);\n"
-                                    "}\0";
 
 void glCompileShaderDebbug(unsigned int shader) {
     int success;
@@ -104,144 +101,97 @@ int main() {
     glCompileShaderDebbug(vertexShader);
 
     // Creating shader objects of type GL_FRAGMENT_SHADER
-    unsigned int fragmentShaderYellow = glCreateShader(GL_FRAGMENT_SHADER);
-    unsigned int fragmentShaderRed = glCreateShader(GL_FRAGMENT_SHADER);
+    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
     // Attaching the source code to the shader and compiling it
-    glShaderSource(fragmentShaderYellow, 1, &fragmentShaderSourceCodeYellow, NULL);
-    glCompileShader(fragmentShaderYellow);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSourceCode, NULL);
+    glCompileShader(fragmentShader);
 
     // Checking glCompileShaderDebbug for fragmentShader
-    glCompileShaderDebbug(fragmentShaderYellow);
-
-    // Attaching the source code to the shader and compiling it
-    glShaderSource(fragmentShaderRed, 1, &fragmentShaderSourceCodeRed, NULL);
-    glCompileShader(fragmentShaderRed);
-
-    // Checking glCompileShaderDebbug for fragmentShader
-    glCompileShaderDebbug(fragmentShaderRed);
+    glCompileShaderDebbug(fragmentShader);
 
     // ------------------------------------------------- PROGRAM RED
 
     // Creating a shader program to link all the shaders together
-    unsigned int shaderProgramYellow = glCreateProgram();
+    unsigned int shaderProgram = glCreateProgram();
 
     // Attaching the previous shaders to the newly created shader program
     // as well as linking them
-    glAttachShader(shaderProgramYellow, vertexShader);
-    glAttachShader(shaderProgramYellow, fragmentShaderYellow);
-    glLinkProgram(shaderProgramYellow);
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
 
     // Checking glProgramLinkDebbug for shaderProgram
-    glProgramLinkDebbug(shaderProgramYellow);
+    glProgramLinkDebbug(shaderProgram);
 
-	// ------------------------------------------------- PROGRAM YELLOW
-
-    // Creating a shader program to link all the shaders together
-    unsigned int shaderProgramRed = glCreateProgram();
-
-    // Attaching the previous shaders to the newly created shader program
-    // as well as linking them
-    glAttachShader(shaderProgramRed, vertexShader);
-    glAttachShader(shaderProgramRed, fragmentShaderRed);
-    glLinkProgram(shaderProgramRed);
-
-    // Checking glProgramLinkDebbug for shaderProgram
-    glProgramLinkDebbug(shaderProgramRed);
-
-    // ------------------------------------------------- 
+	// ------------------------------------------------- 
 
     // Deleting the shaders, since we no longer need them
     glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShaderYellow);
-    glDeleteShader(fragmentShaderRed);
+    glDeleteShader(fragmentShader);
 
     // ------------------------------------------------- VAO & VBO & EBO
 
-    float vertices1[] = { // 3D Coords (vertices data)
-        0.0f, 0.0f, 0.0f, // middle
-        0.5f, 0.0f, 0.0f, // bottom right
-        -0.5f, 0.0f, 0.0f, // bottom left
-        -0.25f, 0.5f, 0.0f, // top left
-        0.25f, 0.5f, 0.0f // top right
+    float vertices[] = {
+        // positions       // colors
+        0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
+        0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f // top
     };
 
-    unsigned int indices1[] = { // Indexes of the vertices
-        0, 1, 4, // first triangle
-    };
 
-    float vertices2[] = { // 3D Coords (vertices data)
-        0.0f, 0.0f, 0.0f, // middle
-        0.5f, 0.0f, 0.0f, // bottom right
-        -0.5f, 0.0f, 0.0f, // bottom left
-        -0.25f, 0.5f, 0.0f, // top left
-        0.25f, 0.5f, 0.0f // top right
-    };
-
-    unsigned int indices2[] = { // Indexes of the vertices
-        0, 2, 3 // second triangle
+    unsigned int indices[] = { // Indexes of the vertices
+        0, 1, 2, // first triangle
     };
 
     // Creating a Vertex Buffer Object (VBO) to manage the memory
-    unsigned int VBO1, VBO2;
-    glGenBuffers(1, &VBO1);
-    glGenBuffers(1, &VBO2);
+    unsigned int VBO;
+    glGenBuffers(1, &VBO);
 
     // Creating a Vertex Array Object (VAO) to store all the state configurations for each vertex
-    unsigned int VAO1, VAO2;
-    glGenVertexArrays(1, &VAO1);
-    glGenVertexArrays(1, &VAO2);
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
 
     // Creating a Element Buffer Object (EBO) to store the indexes
-    unsigned int EBO1, EBO2;
-    glGenBuffers(1, &EBO1);
-    glGenBuffers(1, &EBO2);
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
 
-    // ------------------------------------------------- FIRST TRIANGLE SETUP
+    // ------------------------------------------------- TRIANGLE SETUP
 
     // Binding the buffer to the GL_ARRAY_BUFFER target and copying the data (vertices) into to buffer's memory
-    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // Binding the Vertex Array Object
-    glBindVertexArray(VAO1);
+    glBindVertexArray(VAO);
 
     // Binding the buffer to the GL_ELEMENT_ARRAY_BUFFER target and copying the data (indices) into to buffer's memory
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO1);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices1), indices1, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // Telling OpenGL how it should interpret the vertex data / Setting our vertices attributes pointers
     // The first parameter specifies which vertex attribute we want to configure
     // We specified the position using layout(location = 0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	// Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // -------------------------------------------------
-
-    // ------------------------------------------------- SECOND TRIANGLE SETUP
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-    
-    glBindVertexArray(VAO2);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO2);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices2), indices2, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // ------------------------------------------------- 
-
-    // Unbinding VAO & VBO
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+	// Colour attribute
+    // Changed the offest to 3 * sizeof(float) 
+	// since the colour data starts after the position data, which is a vec3 of floats
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // -------------------------------------------------
 
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // Wireframe mode
 
     // ------------------------------------------------- RENDER LOOP
+
+    // Activating the program before render loop
+    // since we have only one
+    glUseProgram(shaderProgram);
 
     // Render loop
     while (!glfwWindowShouldClose(window)) {
@@ -252,20 +202,8 @@ int main() {
         glClearColor(0.2f, 0.4f, 1.2f, 0.1f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Activating the program
-        glUseProgram(shaderProgramRed);
-
         // Binding the Vertex Array Object 1
-        glBindVertexArray(VAO1);
-
-        // Drawing the shape
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-
-        // Activating the program
-        glUseProgram(shaderProgramYellow);
-
-        // Binding the Vertex Array Object 2
-        glBindVertexArray(VAO2);
+        glBindVertexArray(VAO);
 
         // Drawing the shape
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
@@ -280,12 +218,9 @@ int main() {
     // -------------------------------------------------
 
     // De-allocating all the memory
-    glDeleteVertexArrays(1, &VAO1);
-    glDeleteBuffers(1, &VBO1);
-    glDeleteVertexArrays(1, &VAO2);
-    glDeleteBuffers(1, &VBO2);
-    glDeleteProgram(shaderProgramRed);
-    glDeleteProgram(shaderProgramYellow);
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteProgram(shaderProgram);
 
     glfwTerminate(); // Clean all of GLFW's resources
 

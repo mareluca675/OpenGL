@@ -1,29 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "shader.h"
 #include <iostream>
-
-// Vertex shader in the GLSL language (position)
-const char* vertexSourceCode = 
-                            "#version 330 core\n" // Version of OpenGL, profile
-                            "layout (location = 0) in vec3 aPos;\n" // Input and location
-	                        "layout (location = 1) in vec3 aColor;\n" // Input and locati
-	                        "out vec3 ourColor;\n" // Output
-                            "void main()\n"
-                            "{\n"
-	                        " gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n" 
-	                        " ourColor = aColor;\n"
-                            "}\0";
-
-// Fragment shader in the GLSL language (color)
-const char* fragmentShaderSourceCode = 
-                                    "#version 330 core\n" // Version of OpenGL, profile
-                                    "out vec4 FragColor;\n" // Output
-	                                "in vec3 ourColor;\n" // Input
-                                    "void main()\n"
-                                    "{\n"
-                                    " FragColor = vec4(ourColor, 1.0);\n"
-                                    "}\0";
-
 
 void glCompileShaderDebbug(unsigned int shader) {
     int success;
@@ -90,45 +68,8 @@ int main() {
 
     // ------------------------------------------------- SHADERS
 
-    // Creating a shader object of type GL_VERTEX_SHADER
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-    // Attaching the source code to the shader and compiling it
-    glShaderSource(vertexShader, 1, &vertexSourceCode, NULL);
-    glCompileShader(vertexShader);
-
-    // Checking glCompileShaderDebbug for vertexShader
-    glCompileShaderDebbug(vertexShader);
-
-    // Creating shader objects of type GL_FRAGMENT_SHADER
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-    // Attaching the source code to the shader and compiling it
-    glShaderSource(fragmentShader, 1, &fragmentShaderSourceCode, NULL);
-    glCompileShader(fragmentShader);
-
-    // Checking glCompileShaderDebbug for fragmentShader
-    glCompileShaderDebbug(fragmentShader);
-
-    // ------------------------------------------------- PROGRAM RED
-
-    // Creating a shader program to link all the shaders together
-    unsigned int shaderProgram = glCreateProgram();
-
-    // Attaching the previous shaders to the newly created shader program
-    // as well as linking them
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    // Checking glProgramLinkDebbug for shaderProgram
-    glProgramLinkDebbug(shaderProgram);
-
-	// ------------------------------------------------- 
-
-    // Deleting the shaders, since we no longer need them
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+	// Creating a shader using my shader class
+	Shader ourShader("shader.vs", "shader.fs");
 
     // ------------------------------------------------- VAO & VBO & EBO
 
@@ -136,9 +77,8 @@ int main() {
         // positions       // colors
         0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
         -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
-        0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f // top
+        0.0f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f // top
     };
-
 
     unsigned int indices[] = { // Indexes of the vertices
         0, 1, 2, // first triangle
@@ -173,13 +113,13 @@ int main() {
     // The first parameter specifies which vertex attribute we want to configure
     // We specified the position using layout(location = 0)
 
-	// Position attribute
+    // Position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-	// Colour attribute
+    // Colour attribute
     // Changed the offest to 3 * sizeof(float) 
-	// since the colour data starts after the position data, which is a vec3 of floats
+    // since the colour data starts after the position data, which is a vec3 of floats
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
@@ -191,7 +131,7 @@ int main() {
 
     // Activating the program before render loop
     // since we have only one
-    glUseProgram(shaderProgram);
+	ourShader.use();
 
     // Render loop
     while (!glfwWindowShouldClose(window)) {
@@ -220,7 +160,7 @@ int main() {
     // De-allocating all the memory
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-    glDeleteProgram(shaderProgram);
+    ourShader.ID = 0;
 
     glfwTerminate(); // Clean all of GLFW's resources
 
